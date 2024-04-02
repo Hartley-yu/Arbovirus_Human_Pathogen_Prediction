@@ -1,0 +1,112 @@
+---
+title: "Model validation"
+author: "Huakai Hu"
+format: html
+editor: visual
+jupyter: python3
+---
+
+# Extra Validation Set
+
+Load the required libraries
+
+```{python}
+#| label: loading library
+
+from pathlib import Path
+import pandas as pd
+import xgboost as xgb
+```
+
+## Combining Data
+
+```{python}
+#| label: loading dataset
+
+# set the data path
+data_path = Path.cwd().parent/'datas'
+# 
+# # Load all data
+# df_all = pd.read_csv(data_path / 'seqs_anno.csv').set_index('Accession')
+# 
+# # Load and filter remove_data
+# cols_to_read = ["Name", "Accession", "Release_Date"]
+# remove_data = pd.read_csv(data_path / 'arbovirus_cleaned.csv', usecols=cols_to_read)
+# remove_data["Release_Date"] = pd.to_datetime(remove_data["Release_Date"], errors='coerce')
+# accessions_after_2022 = remove_data[remove_data["Release_Date"].dt.year >= 2022]["Accession"].tolist()
+# 
+# # Filter vector after 2022
+# df_1 = df_all[df_all.index.isin(accessions_after_2022) & (df_all["anno"] == "vector")].iloc[:, list(range(0, 33)) + [36]]
+# 
+# # Load eibi data
+# eibi_all = pd.read_csv(data_path / 'seqs_eibi.tsv', sep='\t', index_col="query").iloc[:, list(range(6, 39))] 
+# 
+# # Concatenate
+# vali_df = pd.concat([df_1, eibi_all], axis=0)
+# 
+# vali_df = vali_df[~vali_df.index.duplicated(keep='first')].fillna(0)
+# 
+# vali_df = pd.merge(vali_df, all_data, on='Accession', how='left')
+# 
+# vali_df.loc[pd.isna(vali_df["Name"]), "Name"] = "Ebinur Lake Virus"
+# 
+# columns = ['Accession', 'Name'] + [col for col in vali_df.columns if col not in ['Accession', 'Name']]
+# 
+# vali_df = vali_df[columns]
+# 
+# vali_df = vali_df.sort_values("Name")
+# 
+# vali_df.to_csv(data_path / 'extra_vali.csv', index=None)
+
+vali_df = pd.read_csv(data_path / 'extra_vali.csv')
+vali_df.head()
+```
+
+## load model
+
+```{python}
+#| label: loading-xgb
+
+# set the data path
+model_path = Path.cwd().parent / 'models'
+
+model = xgb.Booster()
+model.load_model(model_path / "Total_XGB_cli.json")
+```
+
+prediction
+
+```{python}
+#| label: Data prediction
+
+# transform to DMatrix
+vali_D = xgb.DMatrix(vali_df.iloc[:, 2: 35])
+
+# prediction
+vali_result = model.predict(vali_D)
+
+# set thresholds
+vali_result_pred = (model.predict(vali_D) > 0.2).astype(int)
+
+vali_result_pred_df = pd.DataFrame(vali_result_pred, columns=['Prediction'])
+
+df = pd.concat([vali_df, vali_result_pred_df], axis=1)
+
+all_zeros = (df.iloc[:, 2:34] == 0).all(axis=1)
+
+df.loc[all_zeros, 'Prediction'] = 0
+
+needed_df = df[~((df['homo_infected'] == 0) & (df['Prediction'] == 0))]
+
+ndcolumns = (df.iloc[:, 2:34] > 0).any()
+
+test = needed_df.loc[:, ["Accession", "Name"] + list(ndcolumns[ndcolumns].index) + ["Prediction", "homo_infected"]]
+
+test.to_csv(data_path / "testM_prediction.csv", index=None)
+```
+
+```{python}
+#| label: Data prediction
+
+
+```

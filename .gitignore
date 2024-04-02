@@ -1,0 +1,17 @@
+datas/备忘录.txt
+datas/arbovirus_cleaned.csv
+datas/extra_vali.csv
+datas/seqs_anno.csv
+datas/seqs_eibi.tsv
+datas/testM_prediction.csv
+datas/training_data.csv
+datas/zoonotic potential rank.csv
+datas/zoonotic_rank.csv
+datas/zoontic_prediction/extra_validata_rmd.fa
+datas/zoontic_prediction/extra_validata.fa
+datas/zoontic_prediction/zoonotic_metadata.csv
+plots/all_interaction_shap.tiff
+plots/function_shap.tiff
+plots/function_xg.tiff
+plots/interaction_shap.tiff
+plots/model_Performance.tiff
